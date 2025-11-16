@@ -4,4 +4,4 @@ def test_home_route():
     client = app.test_client()
     response = client.get("/")
     assert response.status_code == 200
-    assert response.get_json()["message"] == "Pipeline is working successfully!"
+    assert response.get_json()["message"] == "Pipeline is working successfully! Enes Yakışık Test"
