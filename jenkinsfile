@@ -1,0 +1,64 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME = "ci-cd-demo"
+        IMAGE_NAME = "ci-cd-demo-image"
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo "Kod çekiliyor..."
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                echo "Docker imajı build ediliyor..."
+                sh """
+                    docker build -t ${IMAGE_NAME}:latest .
+                """
+            }
+        }
+
+        stage('Run Tests Inside Container') {
+            steps {
+                echo "Testler container içinde çalıştırılıyor..."
+                sh """
+                    docker run --rm ${IMAGE_NAME}:latest pytest -v
+                """
+            }
+        }
+
+        stage('Stop Previous Container') {
+            steps {
+                echo "Eski container durduruluyor..."
+                sh """
+                    docker ps -q --filter "name=${APP_NAME}" | grep -q . && docker stop ${APP_NAME} || true
+                    docker ps -aq --filter "name=${APP_NAME}" | grep -q . && docker rm ${APP_NAME} || true
+                """
+            }
+        }
+
+        stage('Deploy Container') {
+            steps {
+                echo "Yeni container ayağa kaldırılıyor..."
+                sh """
+                    docker run -d --name ${APP_NAME} -p 5000:5000 ${IMAGE_NAME}:latest
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "🎉 Pipeline başarıyla tamamlandı!"
+        }
+        failure {
+            echo "❌ Pipeline başarısız oldu!"
+        }
+    }
+}
